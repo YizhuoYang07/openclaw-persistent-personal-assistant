@@ -2,13 +2,13 @@
 
 中文 | English
 
-这是一个文档型归档仓库，用于系统化记录早期基于 OpenClaw 平台实现的 Jarvis 版本。
+这是一个脱敏后的产品与工程参考仓库，用于系统化记录早期基于 OpenClaw 平台实现的 Jarvis 版本，并提供一套可复用的最小参考实现。
 
-This is a documentation-only archive that preserves an earlier Jarvis implementation built on top of the OpenClaw platform.
+This is a sanitized product and engineering reference repository that preserves an earlier Jarvis implementation built on top of the OpenClaw platform and includes a reusable minimum reference implementation.
 
-本仓库的目标不是复现原系统，也不是发布可直接运行的产品，而是以公开、专业、可复用的方式保留该版本的产品定义、工程组织和架构思路。
+本仓库的目标不是复刻原始私有环境，而是以公开、专业、可复用的方式保留该版本的产品定义、工程组织和架构思路，并给出一套他人可以继续扩展的代码骨架。
 
-The purpose of this repository is not to reproduce the original environment or distribute a runnable product. Its purpose is to preserve the product framing, engineering model, and architectural thinking behind that version in a public, professional, reusable form.
+The purpose of this repository is not to recreate the original private environment. Its purpose is to preserve the product framing, engineering model, and architectural thinking behind that version in a public, professional, reusable form while providing code that others can extend safely.
 
 ## 1. 仓库定位 | Positioning
 
@@ -52,9 +52,9 @@ This repository intentionally excludes the following:
 - Private conversations, memory data, device state, or account configuration
 - Operational automation detailed enough to recreate the original environment directly
 
-因此，这个仓库更接近“标准化说明书”或“架构归档”，而不是交付件本身。
+因此，这个仓库不是原始私有系统的公开镜像，而是“文档 + 参考实现”组合。
 
-As a result, this repository should be read as a standardized record or architecture archive rather than the product artifact itself.
+As a result, this repository should be understood as a documentation-plus-reference-implementation package rather than a mirror of the original private system.
 
 ## 3. 产品视角 | Product View
 
@@ -252,12 +252,89 @@ This repository currently includes:
 - `README.md`：中英双语总览，面向公开介绍
 - `docs/product.md`：产品层定义、体验模型和能力边界
 - `docs/architecture.md`：架构分层、组件关系和运行模型
+- `src/`：可运行的 Node.js 参考实现骨架，体现 gateway、coordinator、specialists、tools、memory governor 的基本关系
+- `test/`：最小接口测试，验证健康检查、鉴权和结构化评估返回
+- `.env.example`：最小环境变量模板
+- `package.json`：运行与测试入口
 
 - `README.md`: bilingual overview intended for public-facing reading
 - `docs/product.md`: product framing, experience model, and capability boundaries
 - `docs/architecture.md`: architectural layers, component relationships, and operating model
+- `src/`: runnable Node.js reference scaffold showing the relationship between gateway, coordinator, specialists, tools, and memory governor
+- `test/`: minimal API tests covering health, auth, and structured evaluation output
+- `.env.example`: minimal environment variable template
+- `package.json`: run and test entry points
 
-## 7. 适合的阅读对象 | Intended Audience
+## 7. 参考实现 | Reference Implementation
+
+参考实现不是原系统源码的直接公开版本，而是根据公开设计文档重建出的最小可复用骨架。
+
+The reference implementation is not a direct publication of the original system source code. It is a minimum reusable scaffold rebuilt from the public-facing design documents.
+
+当前代码实现了以下核心骨架：
+
+The current code covers the following core skeleton:
+
+- Gateway-style HTTP entry layer
+- Coordinator kernel with interaction mode and execution-path classification
+- Specialist registry with structured contracts
+- Tool registry and orchestration boundary
+- Memory governor for sparse candidate generation
+- Delivery controller enforcing a single outward-facing response contract
+
+它的作用不是“直接代替原系统”，而是给研究者或开发者一个干净、可运行、可扩展的起点。
+
+Its role is not to replace the original system directly, but to give builders a clean, runnable, extensible starting point.
+
+## 8. 快速开始 | Quick Start
+
+```bash
+npm install
+cp .env.example .env
+npm start
+```
+
+默认接口：
+
+Default endpoints:
+
+- `GET /health`
+- `GET /v1/reference-capabilities`
+- `POST /v1/interaction/evaluate`
+
+示例请求：
+
+Example request:
+
+```bash
+curl -X POST http://127.0.0.1:3030/v1/interaction/evaluate \
+	-H "Content-Type: application/json" \
+	-H "Authorization: Bearer replace-me" \
+	-d '{
+		"message": "Help me debug this architecture issue and decide whether it needs a specialist.",
+		"ambientContext": {
+			"workspace": "sample-project"
+		}
+	}'
+```
+
+## 9. 隐私与脱敏原则 | Privacy And Sanitization
+
+这个仓库严格遵循以下原则：
+
+This repository follows the following rules strictly:
+
+- 不公开任何真实私钥、令牌、地址或身份信息
+- 不包含私有对话、私有记忆或原始用户数据
+- 不默认持久化敏感上下文
+- 对 ambient context 中疑似密钥字段自动做红action
+
+- No real keys, tokens, addresses, or identity-specific details are published
+- No private conversations, memories, or raw user data are included
+- Sensitive context is not persisted by default
+- Suspected secret fields in ambient context are redacted automatically
+
+## 10. 适合的阅读对象 | Intended Audience
 
 这个仓库适合以下几类读者：
 
@@ -273,12 +350,12 @@ This repository is useful for several types of readers:
 - Readers reviewing how a product layer can be built on top of OpenClaw
 - Builders planning a next-generation Jarvis or personal intelligence system
 
-## 8. 仓库性质说明 | Nature of the Repository
+## 11. 仓库性质说明 | Nature of the Repository
 
-这是一个“成熟说明型仓库”，不是一个“可直接运行的交付仓库”。
+这是一个“成熟说明型仓库 + 可复用参考实现仓库”，而不是原始私有系统的完整公开发布。
 
-This is a mature documentation repository, not a runnable delivery repository.
+This is a mature documentation repository plus a reusable reference-implementation repository, not a full public release of the original private system.
 
-它的价值在于保留一套完整、清晰、专业的产品与工程表述，使这一版本能够被独立理解、被正确引用、被后续系统清晰地区分。
+它的价值在于同时保留三件事：完整的产品表述、清晰的架构抽象，以及一套他人可以真正拿去继续开发的最小代码骨架。
 
-Its value lies in preserving a complete, clear, and professional record of the product and engineering model so that this version can be understood on its own terms, referenced accurately, and cleanly distinguished from later Jarvis iterations.
+Its value lies in preserving three things at once: a complete product description, a clear architectural abstraction, and a minimum code scaffold that others can actually reuse and extend.

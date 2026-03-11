@@ -1,0 +1,15 @@
+{
+  "name": "openclaw-persistent-personal-assistant",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Sanitized reference scaffold for a persistent personal assistant built on an OpenClaw-style control plane.",
+  "scripts": {
+    "dev": "node --env-file-if-exists=.env --watch src/index.js",
+    "start": "node --env-file-if-exists=.env src/index.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}
