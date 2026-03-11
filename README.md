@@ -253,17 +253,27 @@ This repository currently includes:
 - `docs/product.md`：产品层定义、体验模型和能力边界
 - `docs/architecture.md`：架构分层、组件关系和运行模型
 - `src/`：可运行的 Node.js 参考实现骨架，体现 gateway、coordinator、specialists、tools、memory governor 的基本关系
+- `src/channels/`：多渠道输入适配层的公开参考实现
+- `src/core/session-store.js`：session state 的最小实现
 - `test/`：最小接口测试，验证健康检查、鉴权和结构化评估返回
+- `docs/reference-implementation.md`：参考实现分层说明与扩展顺序
 - `.env.example`：最小环境变量模板
 - `package.json`：运行与测试入口
+- `CONTRIBUTING.md`：贡献边界与脱敏规则
+- `LICENSE`：开放许可
 
 - `README.md`: bilingual overview intended for public-facing reading
 - `docs/product.md`: product framing, experience model, and capability boundaries
 - `docs/architecture.md`: architectural layers, component relationships, and operating model
 - `src/`: runnable Node.js reference scaffold showing the relationship between gateway, coordinator, specialists, tools, and memory governor
+- `src/channels/`: public reference layer for multi-channel input normalization
+- `src/core/session-store.js`: minimum session-state implementation
 - `test/`: minimal API tests covering health, auth, and structured evaluation output
+- `docs/reference-implementation.md`: implementation-layer guide and extension order
 - `.env.example`: minimal environment variable template
 - `package.json`: run and test entry points
+- `CONTRIBUTING.md`: contribution scope and sanitization rules
+- `LICENSE`: open license
 
 ## 7. 参考实现 | Reference Implementation
 
@@ -277,6 +287,8 @@ The current code covers the following core skeleton:
 
 - Gateway-style HTTP entry layer
 - Coordinator kernel with interaction mode and execution-path classification
+- Channel adapters with a normalized inbound event contract
+- Session state management for persistent assistant threads
 - Specialist registry with structured contracts
 - Tool registry and orchestration boundary
 - Memory governor for sparse candidate generation

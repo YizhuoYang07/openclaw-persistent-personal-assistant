@@ -7,6 +7,8 @@ import { ToolOrchestrator } from "../src/core/tool-orchestrator.js";
 import { MemoryGovernor } from "../src/core/memory-governor.js";
 import { DeliveryController } from "../src/core/delivery-controller.js";
 import { CoordinatorKernel } from "../src/core/coordinator-kernel.js";
+import { SessionStore } from "../src/core/session-store.js";
+import { ChannelRegistry } from "../src/channels/registry.js";
 import { SpecialistRegistry } from "../src/specialists/registry.js";
 import { ToolRegistry } from "../src/tools/registry.js";
 import { createServer } from "../src/server.js";
@@ -47,9 +49,77 @@ test("evaluation endpoint enforces bearer token and returns structured plan", as
   await close();
 });
 
+test("channel ingestion creates or updates a session and returns evaluation payload", async () => {
+  const { server, close } = await startServer({ authToken: "test-token" });
+
+  const response = await request(server, {
+    method: "POST",
+    path: "/v1/channels/ingest",
+    token: "test-token",
+    body: {
+      channel: "telegram",
+      senderId: "user-1",
+      text: "Please find the project file in my workspace",
+      sessionTitle: "Telegram thread",
+    },
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.body.event.channel, "telegram");
+  assert.equal(response.body.session.channel, "telegram");
+  assert.equal(response.body.session.eventCount, 1);
+  assert.equal(response.body.evaluation.interaction.mode, "environment");
+
+  await close();
+});
+
+test("session endpoints create and update session state", async () => {
+  const { server, close } = await startServer({ authToken: "test-token" });
+
+  const created = await request(server, {
+    method: "POST",
+    path: "/v1/sessions",
+    token: "test-token",
+    body: {
+      title: "Planning session",
+      channel: "macos-client",
+      mode: "project",
+    },
+  });
+
+  assert.equal(created.statusCode, 201);
+
+  const updated = await request(server, {
+    method: "PATCH",
+    path: `/v1/sessions/${created.body.session.id}`,
+    token: "test-token",
+    body: {
+      status: "paused",
+      tags: ["design", "v2"],
+    },
+  });
+
+  assert.equal(updated.statusCode, 200);
+  assert.equal(updated.body.session.status, "paused");
+  assert.deepEqual(updated.body.session.tags, ["design", "v2"]);
+
+  const listed = await request(server, {
+    method: "GET",
+    path: "/v1/sessions",
+    token: "test-token",
+  });
+
+  assert.equal(listed.statusCode, 200);
+  assert.equal(listed.body.sessions.length, 1);
+
+  await close();
+});
+
 async function startServer(options = {}) {
   const specialistRegistry = new SpecialistRegistry();
   const toolRegistry = new ToolRegistry();
+  const channelRegistry = new ChannelRegistry();
+  const sessionStore = new SessionStore();
   const coordinator = new CoordinatorKernel({
     interactionKernel: new InteractionKernel(),
     specialistRegistry,
@@ -62,6 +132,8 @@ async function startServer(options = {}) {
     coordinator,
     specialistRegistry,
     toolRegistry,
+    channelRegistry,
+    sessionStore,
     authToken: options.authToken || null,
   });
 

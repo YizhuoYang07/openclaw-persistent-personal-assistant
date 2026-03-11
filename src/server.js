@@ -1,7 +1,7 @@
 import http from "node:http";
 import { URL } from "node:url";
 
-export function createServer({ coordinator, specialistRegistry, toolRegistry, authToken }) {
+export function createServer({ coordinator, specialistRegistry, toolRegistry, channelRegistry, sessionStore, authToken }) {
   return http.createServer(async (request, response) => {
     try {
       const url = new URL(request.url || "/", "http://localhost");
@@ -24,6 +24,54 @@ export function createServer({ coordinator, specialistRegistry, toolRegistry, au
           execution_paths: ["direct", "procedural_executor", "specialist", "deliberation"],
           specialists: specialistRegistry.list(),
           tools: toolRegistry.list(),
+          channels: channelRegistry.list(),
+        });
+      }
+
+      if (request.method === "GET" && url.pathname === "/v1/channels") {
+        return sendJson(response, 200, { channels: channelRegistry.list() });
+      }
+
+      if (request.method === "GET" && url.pathname === "/v1/sessions") {
+        return sendJson(response, 200, { sessions: sessionStore.list() });
+      }
+
+      if (request.method === "POST" && url.pathname === "/v1/sessions") {
+        const body = await readJson(request);
+        return sendJson(response, 201, { session: sessionStore.ensureSession(body) });
+      }
+
+      if (request.method === "PATCH" && url.pathname.startsWith("/v1/sessions/")) {
+        const sessionId = url.pathname.split("/").filter(Boolean)[2];
+        const body = await readJson(request);
+        return sendJson(response, 200, { session: sessionStore.updateSession(sessionId, body) });
+      }
+
+      if (request.method === "POST" && url.pathname === "/v1/channels/ingest") {
+        const body = await readJson(request);
+        const event = channelRegistry.normalizeInboundEvent(body);
+        const session = sessionStore.ensureSession({
+          sessionId: body.sessionId,
+          title: body.sessionTitle || `${event.channel} session`,
+          channel: event.channel,
+          mode: body.mode,
+          participants: [event.senderId],
+        });
+        sessionStore.recordEvent(session.id);
+
+        const evaluation = coordinator.evaluate({
+          message: event.text,
+          ambientContext: {
+            channel: event.channel,
+            senderId: event.senderId,
+            trustModel: event.trustModel,
+          },
+        });
+
+        return sendJson(response, 200, {
+          event,
+          session,
+          evaluation,
         });
       }
 
