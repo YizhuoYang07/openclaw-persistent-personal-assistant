@@ -255,6 +255,8 @@ This repository currently includes:
 - `src/`：可运行的 Node.js 参考实现骨架，体现 gateway、coordinator、specialists、tools、memory governor 的基本关系
 - `src/channels/`：多渠道输入适配层的公开参考实现
 - `src/core/session-store.js`：session state 的最小实现
+- `src/core/tool-audit-log.js`：工具计划与审计记录
+- `src/core/memory-review-queue.js`：记忆候选审核队列
 - `test/`：最小接口测试，验证健康检查、鉴权和结构化评估返回
 - `docs/reference-implementation.md`：参考实现分层说明与扩展顺序
 - `.env.example`：最小环境变量模板
@@ -268,6 +270,8 @@ This repository currently includes:
 - `src/`: runnable Node.js reference scaffold showing the relationship between gateway, coordinator, specialists, tools, and memory governor
 - `src/channels/`: public reference layer for multi-channel input normalization
 - `src/core/session-store.js`: minimum session-state implementation
+- `src/core/tool-audit-log.js`: audit trail for planned tool usage
+- `src/core/memory-review-queue.js`: review queue for candidate memories
 - `test/`: minimal API tests covering health, auth, and structured evaluation output
 - `docs/reference-implementation.md`: implementation-layer guide and extension order
 - `.env.example`: minimal environment variable template
@@ -289,6 +293,8 @@ The current code covers the following core skeleton:
 - Coordinator kernel with interaction mode and execution-path classification
 - Channel adapters with a normalized inbound event contract
 - Session state management for persistent assistant threads
+- Tool audit logging before any side-effectful execution path
+- Memory review queue before any long-term promotion decision
 - Specialist registry with structured contracts
 - Tool registry and orchestration boundary
 - Memory governor for sparse candidate generation

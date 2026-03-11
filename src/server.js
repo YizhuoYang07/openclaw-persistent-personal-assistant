@@ -1,7 +1,7 @@
 import http from "node:http";
 import { URL } from "node:url";
 
-export function createServer({ coordinator, specialistRegistry, toolRegistry, channelRegistry, sessionStore, authToken }) {
+export function createServer({ coordinator, specialistRegistry, toolRegistry, channelRegistry, sessionStore, toolAuditLog, memoryReviewQueue, authToken }) {
   return http.createServer(async (request, response) => {
     try {
       const url = new URL(request.url || "/", "http://localhost");
@@ -25,6 +25,31 @@ export function createServer({ coordinator, specialistRegistry, toolRegistry, ch
           specialists: specialistRegistry.list(),
           tools: toolRegistry.list(),
           channels: channelRegistry.list(),
+          audit_layers: ["tool_audit_log", "memory_review_queue"],
+        });
+      }
+
+      if (request.method === "GET" && url.pathname === "/v1/tool-audit-log") {
+        return sendJson(response, 200, { entries: toolAuditLog.list() });
+      }
+
+      if (request.method === "PATCH" && url.pathname.startsWith("/v1/tool-audit-log/")) {
+        const entryId = url.pathname.split("/").filter(Boolean)[2];
+        const body = await readJson(request);
+        return sendJson(response, 200, {
+          entry: toolAuditLog.updateStatus(entryId, body.status || "reviewed", body.note || null),
+        });
+      }
+
+      if (request.method === "GET" && url.pathname === "/v1/memory-review-queue") {
+        return sendJson(response, 200, { items: memoryReviewQueue.list(url.searchParams.get("status")) });
+      }
+
+      if (request.method === "PATCH" && url.pathname.startsWith("/v1/memory-review-queue/")) {
+        const itemId = url.pathname.split("/").filter(Boolean)[2];
+        const body = await readJson(request);
+        return sendJson(response, 200, {
+          item: memoryReviewQueue.review(itemId, body.decision || "approved", body.note || null),
         });
       }
 
@@ -61,6 +86,7 @@ export function createServer({ coordinator, specialistRegistry, toolRegistry, ch
 
         const evaluation = coordinator.evaluate({
           message: event.text,
+          sessionId: session.id,
           ambientContext: {
             channel: event.channel,
             senderId: event.senderId,

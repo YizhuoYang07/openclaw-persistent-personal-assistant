@@ -64,11 +64,23 @@ Implemented in `src/core/tool-orchestrator.js` and `src/tools/registry.js`.
 
 This layer demonstrates selection and boundary control, not full tool execution.
 
+### Tool audit log
+
+Implemented in `src/core/tool-audit-log.js`.
+
+This layer records planned tool usage before any real side effects are allowed. It is intentionally review-oriented.
+
 ### Memory governance
 
 Implemented in `src/core/memory-governor.js`.
 
 The scaffold intentionally uses sparse candidate generation rather than automatic long-term persistence.
+
+### Memory review queue
+
+Implemented in `src/core/memory-review-queue.js`.
+
+This queue holds candidate memory items until an explicit review decision is applied.
 
 ## Endpoints
 
@@ -79,6 +91,10 @@ The scaffold intentionally uses sparse candidate generation rather than automati
 - `GET /v1/sessions`
 - `POST /v1/sessions`
 - `PATCH /v1/sessions/:id`
+- `GET /v1/tool-audit-log`
+- `PATCH /v1/tool-audit-log/:id`
+- `GET /v1/memory-review-queue`
+- `PATCH /v1/memory-review-queue/:id`
 - `POST /v1/interaction/evaluate`
 
 ## Deliberate Omissions

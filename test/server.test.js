@@ -7,6 +7,8 @@ import { ToolOrchestrator } from "../src/core/tool-orchestrator.js";
 import { MemoryGovernor } from "../src/core/memory-governor.js";
 import { DeliveryController } from "../src/core/delivery-controller.js";
 import { CoordinatorKernel } from "../src/core/coordinator-kernel.js";
+import { ToolAuditLog } from "../src/core/tool-audit-log.js";
+import { MemoryReviewQueue } from "../src/core/memory-review-queue.js";
 import { SessionStore } from "../src/core/session-store.js";
 import { ChannelRegistry } from "../src/channels/registry.js";
 import { SpecialistRegistry } from "../src/specialists/registry.js";
@@ -115,17 +117,102 @@ test("session endpoints create and update session state", async () => {
   await close();
 });
 
+test("evaluation queues memory review items and tool audit entries", async () => {
+  const { server, close } = await startServer({ authToken: "test-token" });
+
+  const evaluated = await request(server, {
+    method: "POST",
+    path: "/v1/interaction/evaluate",
+    token: "test-token",
+    body: {
+      sessionId: "session-1",
+      message: "I want to change careers and find the right file in my workspace",
+    },
+  });
+
+  assert.equal(evaluated.statusCode, 200);
+  assert.ok(evaluated.body.toolAuditEntries.length >= 1);
+  assert.ok(evaluated.body.memoryReviewItems.length >= 1);
+
+  const auditLog = await request(server, {
+    method: "GET",
+    path: "/v1/tool-audit-log",
+    token: "test-token",
+  });
+  assert.equal(auditLog.statusCode, 200);
+  assert.ok(auditLog.body.entries.length >= 1);
+
+  const reviewQueue = await request(server, {
+    method: "GET",
+    path: "/v1/memory-review-queue",
+    token: "test-token",
+  });
+  assert.equal(reviewQueue.statusCode, 200);
+  assert.ok(reviewQueue.body.items.length >= 1);
+
+  await close();
+});
+
+test("audit and memory review items can be reviewed", async () => {
+  const { server, close } = await startServer({ authToken: "test-token" });
+
+  await request(server, {
+    method: "POST",
+    path: "/v1/interaction/evaluate",
+    token: "test-token",
+    body: {
+      sessionId: "session-2",
+      message: "I want to find a file and I usually review architecture decisions carefully",
+    },
+  });
+
+  const auditLog = await request(server, {
+    method: "GET",
+    path: "/v1/tool-audit-log",
+    token: "test-token",
+  });
+  const reviewQueue = await request(server, {
+    method: "GET",
+    path: "/v1/memory-review-queue",
+    token: "test-token",
+  });
+
+  const updatedAudit = await request(server, {
+    method: "PATCH",
+    path: `/v1/tool-audit-log/${auditLog.body.entries[0].id}`,
+    token: "test-token",
+    body: { status: "approved", note: "safe read-only tool" },
+  });
+  assert.equal(updatedAudit.statusCode, 200);
+  assert.equal(updatedAudit.body.entry.status, "approved");
+
+  const updatedMemory = await request(server, {
+    method: "PATCH",
+    path: `/v1/memory-review-queue/${reviewQueue.body.items[0].id}`,
+    token: "test-token",
+    body: { decision: "approved", note: "stable pattern candidate" },
+  });
+  assert.equal(updatedMemory.statusCode, 200);
+  assert.equal(updatedMemory.body.item.status, "approved");
+
+  await close();
+});
+
 async function startServer(options = {}) {
   const specialistRegistry = new SpecialistRegistry();
   const toolRegistry = new ToolRegistry();
   const channelRegistry = new ChannelRegistry();
   const sessionStore = new SessionStore();
+  const toolAuditLog = new ToolAuditLog();
+  const memoryReviewQueue = new MemoryReviewQueue();
   const coordinator = new CoordinatorKernel({
     interactionKernel: new InteractionKernel(),
     specialistRegistry,
     toolOrchestrator: new ToolOrchestrator(toolRegistry),
     memoryGovernor: new MemoryGovernor(),
     deliveryController: new DeliveryController(),
+    toolAuditLog,
+    memoryReviewQueue,
   });
 
   const server = createServer({
@@ -134,6 +221,8 @@ async function startServer(options = {}) {
     toolRegistry,
     channelRegistry,
     sessionStore,
+    toolAuditLog,
+    memoryReviewQueue,
     authToken: options.authToken || null,
   });
 
